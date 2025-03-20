@@ -3,9 +3,6 @@ package com.baofu.disturb;
 public class MainClass {
     public static void main(String asdf[]) {
 
-//        disturb("D:\\project\\MovieBroser\\app\\src\\main\\java\\");
-
-//        Guard guard=new Guard("D:\\project\\MovieBroser\\app");
         GuardHelper guard=new GuardHelper("C:\\Users\\Administrator\\Documents\\GitHub\\SaveTiktok\\app");
 //        //修改包名
         guard.changePackageName("com.instagram.ig","t.t.g");
