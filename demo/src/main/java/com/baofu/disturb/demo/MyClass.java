@@ -1,10 +1,10 @@
 package com.baofu.disturb.demo;
 
-import com.baofu.disturb.Guard;
+import com.baofu.disturb.GuardHelper;
 
 public class MyClass {
     public static void main(String[] args) {
-        Guard guard=new Guard("D:\\project\\git\\disturb\\app");
+        GuardHelper guard=new GuardHelper("D:\\project\\git\\disturb\\app");
 //        //修改包名
         guard.changePackageName("com.example.myapplication","c.e.m");
 ////        //修改类名
