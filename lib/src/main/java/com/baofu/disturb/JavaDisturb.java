@@ -1,4 +1,4 @@
-package com.example.lib;
+package com.baofu.disturb;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,10 +13,8 @@ import java.io.LineNumberReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Stack;
 import java.util.regex.Matcher;
@@ -279,7 +277,7 @@ public class JavaDisturb {
                 if(leftStack.isEmpty()){
                     if(!rightStack.isEmpty()){
                         //不匹配的时候返回距离最近的位置
-                       return rightStack.pop();
+                        return rightStack.pop();
                     }
                     return -1;
                 }
