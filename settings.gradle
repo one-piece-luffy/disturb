@@ -1,4 +1,4 @@
-rootProject.name = "My Application"
+rootProject.name = "disturb"
 include ':app'
 include ':lib'
 include ':demo'

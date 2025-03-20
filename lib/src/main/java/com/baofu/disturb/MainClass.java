@@ -6,7 +6,7 @@ public class MainClass {
 //        disturb("D:\\project\\MovieBroser\\app\\src\\main\\java\\");
 
 //        Guard guard=new Guard("D:\\project\\MovieBroser\\app");
-        Guard guard=new Guard("C:\\Users\\Administrator\\Documents\\GitHub\\SaveTiktok\\app");
+        GuardHelper guard=new GuardHelper("C:\\Users\\Administrator\\Documents\\GitHub\\SaveTiktok\\app");
 //        //修改包名
         guard.changePackageName("com.instagram.ig","t.t.g");
 ////        //修改类名

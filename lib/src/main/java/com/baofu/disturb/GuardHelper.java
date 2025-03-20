@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * 混淆辅助类
  * 用于修改包名、类名、图片、布局文件、color名称
  */
-public class Guard {
+public class GuardHelper {
 
     //D:\project\MovieBroser\app
     private String appPath;
@@ -25,7 +25,7 @@ public class Guard {
     private final String buildPath ;
     private final String proguardPath ;
 
-    public Guard(String appPath){
+    public GuardHelper(String appPath){
         this.appPath=appPath;
         root =appPath+ "\\src\\";
         buildPath=appPath+"\\build.gradle";
