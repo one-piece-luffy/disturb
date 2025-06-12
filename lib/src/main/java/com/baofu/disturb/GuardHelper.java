@@ -24,6 +24,9 @@ public class GuardHelper {
     private final String root;
     private final String buildPath ;
     private final String proguardPath ;
+    public String skinResPath;
+    public String begin;
+    public String end;
 
     public GuardHelper(String appPath){
         this.appPath=appPath;
@@ -282,6 +285,14 @@ public class GuardHelper {
                 productFlavorsMap.put(item,item);
             }
         }
+        //多皮肤的资源的文件
+        Map<String, String> multyRessMap = new HashMap<>();
+        for (String item : allFiles) {
+
+            if (item.contains("src\\main\\"+skinResPath)) {
+                multyRessMap.put(item,item);
+            }
+        }
         for (String item : allFiles) {
 //            item="D:\\project\\MovieBroser\\app\\src\\main\\res\\layout\\home_start.xml";
 //            if(!(item.contains("fragment_web_tab")||item.contains("home_start"))){
@@ -295,18 +306,42 @@ public class GuardHelper {
 
             if ( file.getParent().contains("res\\drawable")) {
 
-                String name = generateGuard();
+
                 int exIndex=item.lastIndexOf(".");
                 //文件扩展名
                 String extention = item.substring(exIndex);
+                String oleFileName = file.getName().replace(extention, "");
+                String name = generateGuard();
+                if (oleFileName.startsWith(begin)) {
+                    name = begin + name;
+                }
+
                 File newFile = new File(file.getParent() + "\\" + name + extention);
+                String newFileName = newFile.getName().replace(extention, "");
 
                 boolean result=file.renameTo(newFile);
                 if (result) {
                     allFileMap.remove(item);
                     allFileMap.put(newFile.getAbsolutePath(), newFile.getAbsolutePath());
-                    String oleFileName = file.getName().replace(extention, "");
-                    String newFileName = newFile.getName().replace(extention, "");
+                    //重命名后同时重命名多皮肤资源的文件名
+                    for (Map.Entry<String, String> product : multyRessMap.entrySet()) {
+                        String subItem = product.getKey();
+                        File productFile = new File(subItem);
+                        if (!productFile.exists()) {
+                            continue;
+                        }
+                        String productFileName=productFile.getName().replace(end,"");
+                        if (productFileName.equals(file.getName())) {
+                            File newProductFile = new File(productFile.getParent() + "\\" + name +end+ extention);
+                            boolean productResult = productFile.renameTo(newProductFile);
+                            if (productResult) {
+                                allFileMap.remove(subItem);
+                                allFileMap.put(newProductFile.getAbsolutePath(), newProductFile.getAbsolutePath());
+//                                productIterator.remove();
+//                                productFlavorsMap.put(newProductFile.getAbsolutePath(), newProductFile.getAbsolutePath());
+                            }
+                        }
+                    }
 
                     //重命名后同时重命名多渠道的文件名
                     for (Map.Entry<String, String> product : productFlavorsMap.entrySet()) {
@@ -328,15 +363,17 @@ public class GuardHelper {
                     }
                     for (Map.Entry<String, String> subentry : allFileMap.entrySet()) {
                         String subItem = subentry.getKey();
-//                        subItem=newFile.getAbsolutePath();
 
                         File subFile = new File(subItem);
                         if ((subItem.endsWith(".xml") && subFile.getParent().endsWith("layout"))
                                 || subItem.endsWith("styles.xml")
-                                || (subItem.endsWith(".xml") && subFile.getParent().contains("res\\drawable"))) {
+                                || (subItem.endsWith(".xml") && subFile.getParent().contains("res\\drawable"))
+                                || (subItem.endsWith(".xml") && subFile.getParent().contains(skinResPath))
+                        ) {
+
                             String data = DisturbUtils.readFile(subFile.getAbsolutePath());
-                            String regex = "(@drawable/)" + oleFileName  + "[\"<]";
-                            String content = replaceData(data, regex,  oleFileName,newFileName);
+                            String regex = "@drawable/" + oleFileName + "(" + end + ")?" + "[\"|<]";
+                            String content = replaceData(data, regex, oleFileName, newFileName);
                             if (content != null) {
                                 DisturbUtils.write(subFile.getAbsolutePath(), content);
                             }
@@ -367,53 +404,65 @@ public class GuardHelper {
         File dir = new File(root);
         DisturbUtils.findFolder(dir, allFiles);
 
-        String colorPath=root+"main\\res\\values\\colors.xml";
-        String colorXmlData=DisturbUtils.readFile(colorPath);
+        List<String> colorList=new ArrayList<>();
+        colorList.add(root+"main\\res\\values\\colors.xml");
+//        colorList.add(root+"main\\"+skinResPath+"\\values\\colors.xml");
+
         //正则前缀，以xxx开头
         String prefix="name=\"";
         //正则后缀，以xxx结尾
         String suffix="\"";
         String regex = prefix+"[a-zA-Z0-9_]*\"" ;
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(colorXmlData);
-        while (matcher.find()) {
-            String group = matcher.group();
-            String newName=generateGuard();
-            String oldName=group.substring(prefix.length(),group.length()-1);
-            colorXmlData=colorXmlData.replace(group,prefix+newName+suffix);
-            for (String subItem : allFiles) {
-                File subFile=new File(subItem);
-                if ((subItem.endsWith(".xml") && subFile.getParent().endsWith("layout"))
-                        || subItem.endsWith("styles.xml")
-                        || subItem.endsWith("themes.xml")
-                        || (subItem.endsWith(".xml") && subFile.getParent().contains("res\\drawable"))) {
-                    String data = DisturbUtils.readFile(subFile.getAbsolutePath());
-                    String subregex = "(@color/)" + oldName  + "[\"<]";
-                    String content = replaceData(data, subregex,  oldName,newName);
-                    if (content != null) {
-                        DisturbUtils.write(subFile.getAbsolutePath(), content);
-                    }
-                } else if (subItem.endsWith(".java") || subItem.endsWith(".kt")) {
-                    if (subFile.exists()) {
-                        replaceJavaFileDrawableOrColorName(subFile, oldName, newName);
-                    }
-                } else if (!subItem.contains("src\\main") && subItem.endsWith("colors.xml")) {
-                    String data = DisturbUtils.readFile(subItem);
-                    String content = data.replace(group, prefix + newName + suffix);
-                    if (content != null) {
-                        DisturbUtils.write(subFile.getAbsolutePath(), content);
+        for(String colorPath:colorList){
+            String colorXmlData=DisturbUtils.readFile(colorPath);
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(colorXmlData);
+            while (matcher.find()) {
+                String group = matcher.group();
+                String newName=generateGuard();
+                String oldName=group.substring(prefix.length(),group.length()-1);
+                if (oldName.startsWith(begin)) {
+                    newName = begin + newName;
+                }
+                colorXmlData=colorXmlData.replace(group,prefix+newName+suffix);
+                for (String subItem : allFiles) {
+                    File subFile=new File(subItem);
+                    if ((subItem.endsWith(".xml") && subFile.getParent().endsWith("layout"))
+                            || subItem.endsWith("styles.xml")
+                            || subItem.endsWith("themes.xml")
+                            || (subItem.endsWith(".xml") && subFile.getParent().contains("res\\drawable"))
+                            || (subItem.endsWith(".xml") && subFile.getParent().contains(skinResPath))
+                    ) {
+                        String data = DisturbUtils.readFile(subFile.getAbsolutePath());
+                        //前半段替换xml，后半段替换colors.xml
+                        String subregex = "(@color/" + oldName  + "(" + end + ")?"  + "[\"<>])|(<color name=\""+oldName  + "(" + end + ")?"+"[\"<>])";
+                        String content = replaceData(data, subregex,  oldName,newName);
+                        if (content != null) {
+                            DisturbUtils.write(subFile.getAbsolutePath(), content);
+                        }
+                    } else if (subItem.endsWith(".java") || subItem.endsWith(".kt")) {
+                        if (subFile.exists()) {
+                            replaceJavaFileDrawableOrColorName(subFile, oldName, newName);
+                        }
+                    } else if (!subItem.contains("src\\main") && subItem.endsWith("colors.xml")) {
+                        String data = DisturbUtils.readFile(subItem);
+                        String content = data.replace(group, prefix + newName + suffix);
+                        if (content != null) {
+                            DisturbUtils.write(subFile.getAbsolutePath(), content);
+                        }
                     }
                 }
             }
+            DisturbUtils.write(colorPath,colorXmlData);
         }
-        DisturbUtils.write(colorPath,colorXmlData);
+
 
     }
     private  void replaceJavaFileDrawableOrColorName(File file, String oldStr, String newStr) {
 
         String data = DisturbUtils.readFile(file.getAbsolutePath());
         //匹配名字
-        String regex = "(color|drawable)[.]" + oldStr + "[\\s){;,}]";
+        String regex = "(color|drawable)[.]" + oldStr+   "(" + end + ")?"+ "[\\s){;,}]";
         String content=replaceData(data,regex,oldStr,newStr);
         if (content!=null) {
             data=content;
@@ -422,7 +471,7 @@ public class GuardHelper {
 
     }
 
-    private static void replacejavaLayoutName(File file, String oldStr, String newStr) {
+    private  void replacejavaLayoutName(File file, String oldStr, String newStr) {
         String[] oldArr = oldStr.split("_");
         StringBuilder oldDataBindingName = new StringBuilder();
         for (String s : oldArr) {
@@ -451,7 +500,7 @@ public class GuardHelper {
 
         String data = DisturbUtils.readFile(file.getAbsolutePath());
         //匹配名字
-        String regex = "[\\[\\s.]" + oldStr + "[\\s){;,]";
+        String regex = "[\\[\\s.]" + oldStr +  "(" + end + ")?"+ "[\\s){;,]";
         String content=replaceData(data,regex,oldStr,newStr);
         if (content!=null) {
             data=content;
@@ -467,7 +516,7 @@ public class GuardHelper {
 
     }
 
-    private static void replaceClassName(File file, String old, String newData) {
+    private  void replaceClassName(File file, String old, String newData) {
         String data = DisturbUtils.readFile(file.getAbsolutePath());
         if (data.contains("tableName") || data.contains("@Dao")) {
             //room数据库相关的不修改
@@ -489,7 +538,7 @@ public class GuardHelper {
         }
     }
 
-    private static String replaceDataByJava(String data,String regex,String newStr){
+    private  String replaceDataByJava(String data,String regex,String newStr){
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(data);
         boolean find = false;
@@ -507,7 +556,7 @@ public class GuardHelper {
         }
         return null;
     }
-    private static String replaceData(String data,String regex,String oldStr,String newStr){
+    private  String replaceData(String data,String regex,String oldStr,String newStr){
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(data);
         boolean find = false;
