@@ -4,6 +4,9 @@ public class MainClass {
     public static void main(String asdf[]) {
 
         GuardHelper guard=new GuardHelper("C:\\Users\\Administrator\\Documents\\GitHub\\SaveTiktok\\app");
+        guard.skinResPath="res-dark";
+        guard.begin="skin_";
+        guard.end="_dark";
 //        //修改包名
         guard.changePackageName("com.instagram.ig","t.t.g");
 ////        //修改类名
